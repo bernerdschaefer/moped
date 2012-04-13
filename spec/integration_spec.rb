@@ -3,20 +3,9 @@
 require "spec_helper"
 
 describe Moped::Session do
-  before(:all) do
-    @replica_set = Support::ReplicaSetSimulator.new
-    @replica_set.start
-    @replica_set.initiate
-  end
-
-  after(:all) do
-    @replica_set.stop
-  end
-
   context "with a single master node" do
     let(:session) do
-      seeds = @replica_set.nodes.map(&:address)
-      Moped::Session.new seeds, database: "moped_test"
+      Moped::Session.new %w[127.0.0.1:27017], database: "moped_test"
     end
 
     after do

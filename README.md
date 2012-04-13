@@ -15,6 +15,21 @@ session[:artists].find(name: "Syd Vicious").
   )
 ```
 
+## Features
+
+* Automated replica set node discovery and failover.
+* No C or Java extensions
+* No external dependencies
+* Simple, stable, public API.
+
+### Unsupported Features
+
+* GridFS
+* Map/Reduce
+
+These features are possible to implement, but outside the scope of Moped's
+goals. Consider them perfect opportunities to write a companion gem!
+
 # Project Breakdown
 
 Moped is composed of three parts: an implementation of the [BSON

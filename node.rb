@@ -240,20 +240,6 @@ class ReplicaSet
 
 end
 
-class Session
-  def with_node(operation_type)
-    if options[:consistency] == :eventual && operation_type == :read
-      replica_set.with_secondary do |node|
-        yield node
-      end
-    else
-      replica_set.with_primary do |node|
-        yield node
-      end
-    end
-  end
-end
-
 class Collection
   def insert(documents)
     # ...
