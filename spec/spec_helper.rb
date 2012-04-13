@@ -7,3 +7,4 @@ $:.unshift((Pathname(__FILE__).dirname.parent + "lib").to_s)
 require "moped"
 
 require "support/mock_connection"
+require "support/replica_set_simulator"

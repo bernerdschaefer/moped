@@ -1,0 +1,19 @@
+# started but not initiated
+
+{"ismaster"=>false, "secondary"=>false, "info"=>"can't get local.system.replset config from self or any seed (EMPTYCONFIG)", "isreplicaset"=>true, "maxBsonObjectSize"=>16777216, "ok"=>1.0}
+
+# up!
+
+{"setName"=>"test-set", "ismaster"=>true, "secondary"=>false, "hosts"=>["Bernerd-Schaefers-MacBook-Pro.local:31000", "Bernerd-Schaefers-MacBook-Pro.local:31002", "Bernerd-Schaefers-MacBook-Pro.local:31001"], "primary"=>"Bernerd-Schaefers-MacBook-Pro.local:31000", "me"=>"Bernerd-Schaefers-MacBook-Pro.local:31000", "maxBsonObjectSize"=>16777216, "ok"=>1.0} 
+
+{"setName"=>"test-set", "ismaster"=>false, "secondary"=>false, "hosts"=>["Bernerd-Schaefers-MacBook-Pro.local:31001", "Bernerd-Schaefers-MacBook-Pro.local:31002", "Bernerd-Schaefers-MacBook-Pro.local:31000"], "primary"=>"Bernerd-Schaefers-MacBook-Pro.local:31000", "me"=>"Bernerd-Schaefers-MacBook-Pro.local:31001", "maxBsonObjectSize"=>16777216, "ok"=>1.0} 
+
+{"setName"=>"test-set", "ismaster"=>false, "secondary"=>true, "hosts"=>["Bernerd-Schaefers-MacBook-Pro.local:31002", "Bernerd-Schaefers-MacBook-Pro.local:31001", "Bernerd-Schaefers-MacBook-Pro.local:31000"], "primary"=>"Bernerd-Schaefers-MacBook-Pro.local:31000", "me"=>"Bernerd-Schaefers-MacBook-Pro.local:31002", "maxBsonObjectSize"=>16777216, "ok"=>1.0} 
+
+# while reconfiguring
+
+{"setName"=>"test-set", "ismaster"=>false, "secondary"=>true, "hosts"=>["Bernerd-Schaefers-MacBook-Pro.local:31000", "Bernerd-Schaefers-MacBook-Pro.local:31002", "Bernerd-Schaefers-MacBook-Pro.local:31001"], "me"=>"Bernerd-Schaefers-MacBook-Pro.local:31000", "maxBsonObjectSize"=>16777216, "ok"=>1.0}
+
+{"setName"=>"test-set", "ismaster"=>false, "secondary"=>true, "hosts"=>["Bernerd-Schaefers-MacBook-Pro.local:31001", "Bernerd-Schaefers-MacBook-Pro.local:31002", "Bernerd-Schaefers-MacBook-Pro.local:31000"], "primary"=>"Bernerd-Schaefers-MacBook-Pro.local:31000", "me"=>"Bernerd-Schaefers-MacBook-Pro.local:31001", "maxBsonObjectSize"=>16777216, "ok"=>1.0}
+
+{"setName"=>"test-set", "ismaster"=>false, "secondary"=>true, "hosts"=>["Bernerd-Schaefers-MacBook-Pro.local:31002", "Bernerd-Schaefers-MacBook-Pro.local:31001", "Bernerd-Schaefers-MacBook-Pro.local:31000"], "me"=>"Bernerd-Schaefers-MacBook-Pro.local:31002", "maxBsonObjectSize"=>16777216, "ok"=>1.0}
