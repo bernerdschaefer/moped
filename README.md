@@ -314,6 +314,65 @@ scope.one # nil
 
 </tbody></table>
 
+# Replica Sets
+
+Moped has full support for replica sets including automatic failover and node
+discovery.
+
+## Automatic Failover
+
+Moped will automatically retry lost connections and attempt to detect dead
+connections before sending an operation. Note, that it will *not* retry
+individual operations! For example, these cases will work and not raise any
+exceptions:
+
+```ruby
+session[:users].insert(name: "John")
+# kill primary node and promote secondary
+session[:users].insert(name: "John")
+session[:users].find.count # => 2.0
+
+# primary node drops our connection
+session[:users].insert(name: "John")
+```
+
+However, you'll get an operation error in a case like:
+
+```ruby
+# primary node goes down while reading the reply
+session.with(safe: true)[:users].insert(name: "John")
+```
+
+And you'll get a connection error in a case like:
+
+```ruby
+# primary node goes down, no new primary available yet
+session[:users].insert(name: "John")
+```
+
+If your session is running with eventual consistency, read operations will
+never raise connection errors as long as any secondary or primary node is
+running. The only case where you'll see a connection failure is if a node goes
+down while attempting to retrieve more results from a cursor, because cursors
+are tied to individual nodes.
+
+When two attempts to connect to a node fail, it will be marked as down. This
+removes it from the list of available nodes for `:down_interval` (default 30
+seconds). Note that the `:down_interval` only applies to normal operations;
+that is, if you ask for a primary node and none is available, all nodes will be
+retried. Likewise, if you ask for a secondary node, and no secondary or primary
+node is available, all nodes will be retreied.
+
+## Node Discovery
+
+The addresses you pass into your session are used as seeds for setting up
+replica set connections. After connection, each seed node will return a list of
+other known nodes which will be added to the set.
+
+This information is cached according to the `:refresh_interval` option (default:
+5 minutes). That means, e.g., that if you add a new node to your replica set,
+it should be represented in Moped within 5 minutes.
+
 # Thread-Safety
 
 Moped is thread-safe -- depending on your definition of thread-safe. For Moped,

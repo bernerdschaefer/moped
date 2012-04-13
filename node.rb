@@ -69,12 +69,10 @@ class Node
   #
   # @raises ConnectionError when a connection cannot be established.
   def ensure_connected
-    inside_ensure_connected = @inside_ensure_connected
-
     # Don't run the reconnection login if we're already inside an
     # +ensure_connected+ block.
-    return yield if inside_ensure_connected
-    @inside_ensure_connected = true
+    return yield if Threaded.executing? :connection
+    Threaded.begin :connection
 
     retry_on_failure = true
 
@@ -105,7 +103,7 @@ class Node
       raise
     end
   ensure
-    @inside_ensure_connected = inside_ensure_connected
+    Threaded.end :connection
   end
 
 end
@@ -240,6 +238,8 @@ class ReplicaSet
 
 end
 
+## speculative
+
 class Collection
   def insert(documents)
     # ...
@@ -267,5 +267,20 @@ class Cursor
 
   def get_more
     @node.get_more @get_more_op
+  end
+end
+
+class SessionNodeProxy
+  def initialize(session, node)
+
+  end
+
+  def insert(database, collection, documents, options = {})
+    operation = Protocol::SafeOperation.wrap(
+      Protocol::Insert.new(database, collection, documents, options),
+      session.safety
+    )
+
+    node.
   end
 end
