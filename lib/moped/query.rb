@@ -85,7 +85,10 @@ module Moped
 
     # @return [Hash] the first document that matches the selector.
     def one()
-      session.simple_query(operation)
+      session.context.query(
+        operation.database, operation.collection,
+        operation.selector, { limit: -1 }
+      ).documents[0]
     end
     alias first one
 
@@ -137,16 +140,12 @@ module Moped
     # @param [Array] flags an array of operation flags. Valid values are:
     #   +:multi+ and +:upsert+
     def update(change, flags = nil)
-      update = Protocol::Update.new(
-        operation.database,
-        operation.collection,
-        operation.selector,
-        change,
-        flags: flags
-      )
-
       session.with(consistency: :strong) do |session|
-        session.execute update
+        session.context.update operation.database,
+          operation.collection,
+          operation.selector,
+          change,
+          flags: flags
       end
     end
 
@@ -179,15 +178,11 @@ module Moped
     # @example
     #   db[:people].find(name: "John").remove
     def remove
-      delete = Protocol::Delete.new(
-        operation.database,
-        operation.collection,
-        operation.selector,
-        flags: [:remove_first]
-      )
-
       session.with(consistency: :strong) do |session|
-        session.execute delete
+        session.context.remove operation.database,
+          operation.collection,
+          operation.selector,
+          flags: [:remove_first]
       end
     end
 
@@ -196,14 +191,10 @@ module Moped
     # @example
     #   db[:people].find(name: "John").remove_all
     def remove_all
-      delete = Protocol::Delete.new(
-        operation.database,
-        operation.collection,
-        operation.selector
-      )
-
       session.with(consistency: :strong) do |session|
-        session.execute delete
+        session.context.remove operation.database,
+          operation.collection,
+          operation.selector
       end
     end
 

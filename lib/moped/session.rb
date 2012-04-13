@@ -34,8 +34,12 @@ module Moped
     attr_reader :options
 
     # @private
-    # @return [Cluster] this session's cluster
-    attr_reader :cluster
+    # @return [ReplicaSet] this session's replica_set
+    attr_reader :replica_set
+
+    # @private
+    # @return [Context] this session's context
+    attr_reader :context
 
     # @param [Array] seeds an of host:port pairs
     # @param [Hash] options
@@ -45,7 +49,8 @@ module Moped
     # @option options [Symbol, String] :database the database to use
     # @option options [:strong, :eventual] :consistency (:eventual)
     def initialize(seeds, options = {})
-      @cluster = Cluster.new(seeds)
+      @replica_set = ReplicaSet.new(seeds, {})
+      @context = Context.new(self)
       @options = options
       @options[:consistency] ||= :eventual
     end
@@ -53,6 +58,11 @@ module Moped
     # @return [Boolean] whether the current session requires safe operations.
     def safe?
       !!safety
+    end
+
+    # @return [:strong, :eventual] the session's consistency
+    def consistency
+      options[:consistency]
     end
 
     # Switch the session's current database.
@@ -111,7 +121,7 @@ module Moped
     # @return [Moped::Session] the new session
     def new(options = {})
       session = with(options)
-      session.cluster.reconnect
+      session.instance_variable_set(:@replica_set, replica_set.dup)
 
       if block_given?
         yield session
@@ -166,53 +176,6 @@ module Moped
       end
     end
 
-    # @private
-    def simple_query(query)
-      query.limit = -1
-
-      query(query).documents.first
-    end
-
-    # @private
-    def query(query)
-      if options[:consistency] == :eventual
-        query.flags |= [:slave_ok] if query.respond_to? :flags
-        mode = :read
-      else
-        mode = :write
-      end
-
-      reply = socket_for(mode).execute(query)
-
-      reply.tap do |reply|
-        if reply.flags.include?(:query_failure)
-          raise Errors::QueryFailure.new(query, reply.documents.first)
-        end
-      end
-    end
-
-    # @private
-    def execute(op)
-      mode = options[:consistency] == :eventual ? :read : :write
-      socket = socket_for(mode)
-
-      if safe?
-        last_error = Protocol::Command.new(
-          "admin", { getlasterror: 1 }.merge(safety)
-        )
-
-        socket.execute(op, last_error).documents.first.tap do |result|
-          raise Errors::OperationFailure.new(
-            op, result
-          ) if result["err"] || result["errmsg"]
-        end
-      else
-        socket.execute(op)
-      end
-    end
-
-    private
-
     # @return [Boolean, Hash] the safety level for this session
     def safety
       safe = options[:safe]
@@ -227,27 +190,19 @@ module Moped
       end
     end
 
-    def socket_for(mode)
-      if options[:retain_socket]
-        @socket ||= cluster.socket_for(mode)
-      else
-        cluster.socket_for(mode)
-      end
-    end
+    private
 
     def set_current_database(database)
       @current_database = Database.new(self, database)
     end
 
-    def dup
-      session = super
-      session.instance_variable_set :@options, options.dup
+    def initialize_copy(_)
+      @context = Context.new(self)
+      @options = @options.dup
 
       if defined? @current_database
-        session.send(:remove_instance_variable, :@current_database)
+        remove_instance_variable :@current_database
       end
-
-      session
     end
   end
 end

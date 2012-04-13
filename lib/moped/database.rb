@@ -29,7 +29,9 @@ module Moped
 
     # Drop the database.
     def drop
-      command dropDatabase: 1
+      session.with(consistency: :strong) do |session|
+        session.context.command name, dropDatabase: 1
+      end
     end
 
     # Log in with +username+ and +password+ on the current database.
@@ -54,17 +56,7 @@ module Moped
     # @param [Hash] command the command to run
     # @return [Hash] the result of the command
     def command(command)
-      operation = Protocol::Command.new(name, command)
-
-      result = session.with(consistency: :strong) do |session|
-        session.simple_query(operation)
-      end
-
-      raise Errors::OperationFailure.new(
-        operation, result
-      ) unless result["ok"] == 1.0
-
-      result
+      session.context.command name, command
     end
 
     # @param [Symbol, String] collection the collection name

@@ -86,49 +86,6 @@ class Cursor
 
 end
 
-class Context
-
-  delegate :safety, :safe, :consistency, to: :@session
-
-  def query(database, collection, selector, options = {})
-    options[:flags] |= :slave_ok if consistency == :eventual
-
-    with_node do |node|
-      node.query(database, collection, selector, options)
-    end
-  end
-
-  def insert(database, collection, documents, options = {})
-    with_node do |node|
-      if safe?
-        node.pipeline do
-          node.insert(database, collection, documents, options)
-          node.command("admin", { getlasterror: 1 }.merge(safety))
-        end
-      else
-        node.insert(database, collection, documents, options)
-      end
-    end
-  end
-
-  def get_more(*args)
-    raise NotImplementedError, "#get_more cannot be called on Context; it must be called directly on a node"
-  end
-
-  def with_node
-    if consistency == :eventual
-      replica_set.with_secondary do |node|
-        yield node
-      end
-    else
-      replica_set.with_primary do |node|
-        yield node
-      end
-    end
-  end
-
-end
-
 class Node
 
   def initialize(host, port, options = {}) end
@@ -157,51 +114,11 @@ class Node
   def refresh() end
   def secondary?() end
 
-  def pipeline
-    Threaded.begin :pipeline
-
-    begin
-      yield
-    ensure
-      Threaded.end :pipeline
-    end
-
-    flush unless Threaded.executing? :pipeline
-  end
-
   private
 
   def connect() end
   def down!() end
   def ensure_connected() end
 
-  def process(operation, &callback)
-    if Threaded.executing? :pipeline
-      queue.push [operation, callback]
-    else
-      flush([operation, callback])
-    end
-  end
-
-  def queue
-    Threaded.stack(:pipelined_operations)
-  end
-
-  def flush(ops = queue)
-    operations, callbacks = ops.transpose
-
-    logging(operations) do
-      ensure_connected do
-        connection.write operations
-        replies = connection.receive_replies(operations)
-
-        replies.zip(callbacks).map do |reply, callback|
-          callback[reply] if callback
-        end
-      end
-    end
-  ensure
-    ops.clear
-  end
 
 end

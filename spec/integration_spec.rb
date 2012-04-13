@@ -10,7 +10,7 @@ describe Moped::Session do
 
     after do
       session[:people].drop if session[:people].find.count > 0
-      session.cluster.servers.each(&:close)
+      session.replica_set.nodes.each { |n| n.send :disconnect }
     end
 
     it "inserts and queries a single document" do
