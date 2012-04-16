@@ -67,12 +67,13 @@ module Moped
       @secondary
     end
 
-    # Refreshes information about the Node, such as it's status in the replica
+    # Refresh information about the node, such as it's status in the replica
     # set and it's known peers.
     #
-    # @raises ConnectionError when the node cannot be reached
-    # @raises ReplicaSetReconfigured when the node's role changed within an
-    #   +#ensure_primary+ block.
+    # Returns nothing.
+    # Raises ConnectionError if the node cannot be reached
+    # Raises ReplicaSetReconfigured if the node is no longer a primary node and
+    #   refresh was called within an +#ensure_primary+ block.
     def refresh
       info = command "admin", ismaster: 1
 
@@ -82,22 +83,27 @@ module Moped
 
       @primary, @secondary = primary, secondary
 
-      if @ensure_primary && !primary
+      if !primary && Threaded.executing?(:ensure_primary)
         raise ReplicaSetReconfigured, "#{inspect} is no longer the primary node."
       end
     end
 
-    # Sets an +ensure_primary+ flag on the node for the duration of the provided
-    # block. This causes +#refresh+ to raise a +ReplicaSetReconfigured+ exception
-    # if the node is no longer the primary.
+    # Set a flag on the node for the duration of provided block so that an
+    # exception is raised if the node is no longer the primary node.
+    #
+    # Returns nothing.
     def ensure_primary
-      ensure_primary = @ensure_primary
-      @ensure_primary = true
+      Threaded.begin :ensure_primary
       yield
     ensure
-      @ensure_primary = ensure_primary
+      Threaded.end :ensure_primary
     end
 
+    # Connect to the node.
+    #
+    # Returns nothing.
+    # Raises Moped::ConnectionError if the connection times out.
+    # Raises Moped::ConnectionError if the server is unavailable.
     def connect
       connection.connect host, port, timeout
       @down_at = nil
@@ -109,7 +115,9 @@ module Moped
       raise ConnectionError, "Could not connect to Mongo on #{host}:#{port}"
     end
 
-    # Flags the node as down.
+    # Mark the node as down.
+    #
+    # Returns nothing.
     def down!
       @down_at = Time.now
     end

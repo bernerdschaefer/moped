@@ -69,7 +69,7 @@ module Moped
     #
     # @example
     #   session.use :moped
-    #   session[:people].     john, mary = session[:people].find.one # => { :name => "John" }
+    #   session[:people].find.one # => { :name => "John" }
     #
     # @param [String] database the database to use
     def use(database)
@@ -165,17 +165,6 @@ module Moped
     # @raise (see Moped::Database#login)
     delegate :logout => :current_database
 
-    # @private
-    def current_database
-      return @current_database if defined? @current_database
-
-      if database = options[:database]
-        set_current_database(database)
-      else
-        raise "No database set for session. Call #use or #with before accessing the database"
-      end
-    end
-
     # @return [Boolean, Hash] the safety level for this session
     def safety
       safe = options[:safe]
@@ -191,6 +180,16 @@ module Moped
     end
 
     private
+
+    def current_database
+      return @current_database if defined? @current_database
+
+      if database = options[:database]
+        set_current_database(database)
+      else
+        raise "No database set for session. Call #use or #with before accessing the database"
+      end
+    end
 
     def set_current_database(database)
       @current_database = Database.new(self, database)
