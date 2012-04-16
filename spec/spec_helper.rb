@@ -1,10 +1,11 @@
 require "java" if RUBY_PLATFORM == "java"
-require "bundler"
-Bundler.require
+require "rspec"
 
 $:.unshift((Pathname(__FILE__).dirname.parent + "lib").to_s)
 
 require "moped"
+require "support/stats"
 
-require "support/mock_connection"
-require "support/replica_set_simulator"
+RSpec.configure do |config|
+  Support::Stats.install!
+end
