@@ -143,6 +143,8 @@ module Support
       # Stop the node.
       def stop
         if @server
+          hiccup
+
           @server.close
           @server = nil
         end
@@ -224,27 +226,22 @@ module Support
         @timeout = 0.1
         @servers = servers
         @clients = []
-        @mutex = Mutex.new
       end
 
       def shutdown
-        @mutex.synchronize do
-          @servers.each &:close
-          @clients.each &:close
-          @shutdown = true
-        end
+        @servers.each &:close
+        @clients.each &:close
+        @shutdown = true
       end
 
       def next_client
         throw :shutdown if @shutdown
 
         begin
-          readable, _, errors = @mutex.synchronize do
-            servers = @servers.reject &:closed?
-            clients =  @clients.reject &:closed?
-            Moped.logger.debug "replica_set: selecting on connections"
-            Kernel.select(servers + clients, nil, clients, @timeout)
-          end
+          servers = @servers.reject &:closed?
+          clients =  @clients.reject &:closed?
+          Moped.logger.debug "replica_set: selecting on connections"
+          readable, _, errors = Kernel.select(servers + clients, nil, clients, @timeout)
         rescue IOError, Errno::EBADF, TypeError
           # Looks like we hit a bad file descriptor or closed connection.
           Moped.logger.debug "replica_set: io error, retrying"
@@ -283,16 +280,14 @@ module Support
       def close_clients_for(server)
         Moped.logger.debug "replica_set: closing open clients on #{server.port}"
 
-        @mutex.synchronize do
-          @clients.reject! do |client|
-            port = client.addr(false)[1]
+        @clients.reject! do |client|
+          port = client.addr(false)[1]
 
-            if port == server.port
-              client.close
-              true
-            else
-              false
-            end
+          if port == server.port
+            client.close
+            true
+          else
+            false
           end
         end
       end

@@ -22,9 +22,8 @@ module Moped
         down_interval: 30,
         refresh_interval: 300
       }.merge(options)
-      @nodes = []
 
-      refresh hosts.map { |host| Node.new(host) }
+      @nodes = hosts.map { |host| Node.new(host) }
     end
 
     # Refreshes information for each of the nodes provided. The node list
@@ -72,7 +71,7 @@ module Moped
       # Find the nodes that were down but are ready to be refreshed, or those
       # with stale connection information.
       needs_refresh, available = @nodes.partition do |node|
-        (node.down? && node.down_at < (Time.new - @options[:down_internal])) ||
+        (node.down? && node.down_at < (Time.new - @options[:down_interval])) ||
           node.needs_refresh?(Time.new - @options[:refresh_interval])
       end
 

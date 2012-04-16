@@ -119,6 +119,8 @@ module Moped
       raise ConnectionError, "Could not connect to Mongo on #{host}:#{port}"
     end
 
+    attr_reader :down_at
+
     # Mark the node as down.
     #
     # Returns nothing.
@@ -127,7 +129,7 @@ module Moped
     end
 
     def down?
-      !!@down_at
+      @down_at
     end
 
     # Yields the block if a connection can be established, retrying when a
