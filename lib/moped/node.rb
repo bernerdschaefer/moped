@@ -55,6 +55,10 @@ module Moped
       !@refreshed_at || @refreshed_at < time
     end
 
+    def address
+      "#{@host}:#{@port}"
+    end
+
     def peers
       []
     end
