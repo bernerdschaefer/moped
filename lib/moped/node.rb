@@ -12,8 +12,8 @@ module Moped
       @timeout = 5
     end
 
-    def command(database, cmd)
-      operation = Protocol::Command.new(database, cmd)
+    def command(database, cmd, options = {})
+      operation = Protocol::Command.new(database, cmd, options)
 
       process(operation) do |reply|
         result = reply.documents[0]

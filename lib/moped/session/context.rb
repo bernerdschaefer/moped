@@ -26,8 +26,9 @@ module Moped
       end
 
       def command(database, command)
+        options = consistency == :eventual ? { :flags => [:slave_ok] } : {}
         with_node do |node|
-          node.command(database, command)
+          node.command(database, command, options)
         end
       end
 

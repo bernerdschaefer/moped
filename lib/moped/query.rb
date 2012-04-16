@@ -115,6 +115,7 @@ module Moped
         key: key.to_s,
         query: selector
       )
+
       result["values"]
     end
 

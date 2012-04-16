@@ -60,9 +60,21 @@ describe Moped::Query do
         { count: 1, scope: scope }
       ]
     end
+
     it "returns distinct values for +key+" do
       users.insert(documents)
       users.find(scope: scope).distinct(:count).should =~ [0, 1]
+    end
+
+    context "when session is eventually consistent" do
+      it "sets :slave_ok" do
+        operations = Support::Stats.collect do
+          users.find(scope).distinct(:count)
+        end[:primary]
+
+        command = operations.grep(Moped::Protocol::Command)[0]
+        command.flags.should include :slave_ok
+      end
     end
   end
 
@@ -159,6 +171,17 @@ describe Moped::Query do
     it "returns the number of matching document" do
       users.insert(documents)
       users.find(scope: scope).count.should eq 2
+    end
+
+    context "when session is eventually consistent" do
+      it "sets :slave_ok" do
+        operations = Support::Stats.collect do
+          users.find(scope).count
+        end[:primary]
+
+        command = operations.grep(Moped::Protocol::Command)[0]
+        command.flags.should include :slave_ok
+      end
     end
   end
 
