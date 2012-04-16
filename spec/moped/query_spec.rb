@@ -77,9 +77,20 @@ describe Moped::Query do
   end
 
   describe "#one" do
-    it "returns the first matching document" do
+    before do
       users.insert(documents)
+    end
+
+    it "returns the first matching document" do
       users.find(scope: scope).one.should eq documents.first
+    end
+
+    it "respects #skip" do
+      users.find(scope: scope).skip(1).one.should eq documents.last
+    end
+
+    it "respects #sort" do
+      users.find(scope: scope).sort(_id: -1).one.should eq documents.last
     end
   end
 
@@ -88,6 +99,46 @@ describe Moped::Query do
       users.insert(documents)
       users.find(scope: scope).each.with_index do |document, index|
         document.should eq documents[index]
+      end
+    end
+
+    context "with a limit" do
+      it "closes open cursors" do
+        users.insert(100.times.map { Hash["scope" => scope] })
+
+        stats = Support::Stats.collect do
+          users.find(scope: scope).limit(5).entries
+        end
+
+        stats["127.0.0.1:27017"].grep(Moped::Protocol::KillCursors).count.should eq 1
+      end
+
+    end
+
+    context "with a limit and large result set" do
+      it "gets more and closes cursors" do
+        11.times do
+          users.insert(scope: scope, large_field: "a"*1_000_000)
+        end
+
+        stats = Support::Stats.collect do
+          users.find(scope: scope).limit(10).entries
+        end
+
+        stats["127.0.0.1:27017"].grep(Moped::Protocol::GetMore).count.should eq 1
+        stats["127.0.0.1:27017"].grep(Moped::Protocol::KillCursors).count.should eq 1
+      end
+    end
+
+    context "without a limit" do
+      it "fetches more" do
+        users.insert(102.times.map { Hash["scope" => scope] })
+
+        stats = Support::Stats.collect do
+          users.find(scope: scope).entries
+        end
+
+        stats["127.0.0.1:27017"].grep(Moped::Protocol::GetMore).count.should eq 1
       end
     end
   end

@@ -85,10 +85,7 @@ module Moped
 
     # @return [Hash] the first document that matches the selector.
     def one()
-      session.context.query(
-        operation.database, operation.collection,
-        operation.selector, { limit: -1 }
-      ).documents[0]
+      limit(-1).each.first
     end
     alias first one
 
@@ -96,7 +93,7 @@ module Moped
     #
     # @yieldparam [Hash] document each matching document
     def each
-      cursor = Cursor.new(session.with(retain_socket: true), operation)
+      cursor = Cursor.new(session, operation)
       cursor.to_enum.tap do |enum|
         enum.each do |document|
           yield document
