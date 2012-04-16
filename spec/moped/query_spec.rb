@@ -13,6 +13,10 @@ describe Moped::Query do
     object_id
   end
 
+  before do
+    users.find.remove_all
+  end
+
   let(:documents) do
     [
       { "_id" => Moped::BSON::ObjectId.new, "scope" => scope },
@@ -237,6 +241,20 @@ describe Moped::Query do
 
         query = stats[:secondary].grep(Moped::Protocol::Query).first
         query.flags.should include :slave_ok
+      end
+
+      context "and no secondaries are available" do
+        before do
+          @secondaries.each &:stop
+        end
+
+        it "queries the primary node" do
+          stats = Support::Stats.collect do
+            session.with(consistency: :eventual)[:users].find(scope: scope).entries
+          end
+
+          stats[:primary].grep(Moped::Protocol::Query).count.should eq 1
+        end
       end
     end
 

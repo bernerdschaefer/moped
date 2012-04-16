@@ -182,4 +182,52 @@ describe Moped::ReplicaSet, replica_set: true do
       end
     end
   end
+
+  context "with down interval" do
+    let(:replica_set) do
+      Moped::ReplicaSet.new(seeds, { down_interval: 5 })
+    end
+
+    context "and all secondaries are down" do
+      before do
+        replica_set.refresh
+        @secondaries.each &:stop
+        replica_set.refresh
+      end
+
+      describe "#with_secondary" do
+        it "connects and yields the primary node" do
+          replica_set.with_secondary do |node|
+            node.command "admin", ping: 1
+            node.address.should eq @primary.address
+          end
+        end
+      end
+
+      context "when a secondary node comes back up" do
+        before do
+          @secondaries.each &:restart
+        end
+
+        describe "#with_secondary" do
+          it "connects and yields the primary node" do
+            replica_set.with_secondary do |node|
+              node.command "admin", ping: 1
+              node.address.should eq @primary.address
+            end
+          end
+        end
+
+        context "and the node is ready to be retried" do
+          it "connects and yields the secondary node" do
+            Time.stub(:new).and_return(Time.now + 10)
+            replica_set.with_secondary do |node|
+              node.command "admin", ping: 1
+              @secondaries.map(&:address).should include node.address
+            end
+          end
+        end
+      end
+    end
+  end
 end

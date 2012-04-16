@@ -79,7 +79,7 @@ module Moped
       available.concat refresh(needs_refresh)
 
       # Now return all the nodes that are available.
-      available
+      available.reject &:down?
     end
 
     # Yields the replica set's primary node to the provided block. This method
