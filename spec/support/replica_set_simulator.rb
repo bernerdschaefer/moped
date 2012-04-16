@@ -6,6 +6,29 @@ module Support
   # ismaster commands, which it returns simulated responses for.
   class ReplicaSetSimulator
 
+    module Helpers
+      def self.included(context)
+        context.before :all do
+          @replica_set = ReplicaSetSimulator.new
+          @replica_set.start
+
+          @primary, @secondaries = @replica_set.initiate
+        end
+
+        context.after :all do
+          @replica_set.stop
+        end
+
+        context.after :each do
+          @replica_set.nodes.each &:restart
+        end
+
+        context.let :seeds do
+          @replica_set.nodes.map &:address
+        end
+      end
+    end
+
     attr_reader :nodes
     attr_reader :manager
 
@@ -222,7 +245,7 @@ module Support
             Moped.logger.debug "replica_set: selecting on connections"
             Kernel.select(servers + clients, nil, clients, @timeout)
           end
-        rescue IOError, Errno::EBADF
+        rescue IOError, Errno::EBADF, TypeError
           # Looks like we hit a bad file descriptor or closed connection.
           Moped.logger.debug "replica_set: io error, retrying"
           retry

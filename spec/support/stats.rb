@@ -17,7 +17,15 @@ module Support
     extend self
 
     def record(node, operations)
-      @stats[node.address].concat(operations) if @stats
+      key = if node.primary?
+        :primary
+      elsif node.secondary?
+        :secondary
+      else
+        :other
+      end
+
+      @stats[key].concat(operations) if @stats
     end
 
     def collect

@@ -32,6 +32,11 @@ module Moped
           true
         end
       end
+
+      def write(*args)
+        raise ConnectionError, "Socket connection was closed by remote host" unless alive?
+        super
+      end
     end
 
     def initialize

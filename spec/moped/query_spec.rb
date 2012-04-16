@@ -2,7 +2,7 @@ require "spec_helper"
 
 describe Moped::Query do
   let(:session) do
-    Moped::Session.new %w[127.0.0.1:27017], database: "moped_test", safe: true
+    Moped::Session.new %w[127.0.0.1:27017], database: "moped_test"
   end
 
   let(:users) do
@@ -110,7 +110,7 @@ describe Moped::Query do
           users.find(scope: scope).limit(5).entries
         end
 
-        stats["127.0.0.1:27017"].grep(Moped::Protocol::KillCursors).count.should eq 1
+        stats[:primary].grep(Moped::Protocol::KillCursors).count.should eq 1
       end
 
     end
@@ -125,8 +125,8 @@ describe Moped::Query do
           users.find(scope: scope).limit(10).entries
         end
 
-        stats["127.0.0.1:27017"].grep(Moped::Protocol::GetMore).count.should eq 1
-        stats["127.0.0.1:27017"].grep(Moped::Protocol::KillCursors).count.should eq 1
+        stats[:primary].grep(Moped::Protocol::GetMore).count.should eq 1
+        stats[:primary].grep(Moped::Protocol::KillCursors).count.should eq 1
       end
     end
 
@@ -138,7 +138,7 @@ describe Moped::Query do
           users.find(scope: scope).entries
         end
 
-        stats["127.0.0.1:27017"].grep(Moped::Protocol::GetMore).count.should eq 1
+        stats[:primary].grep(Moped::Protocol::GetMore).count.should eq 1
       end
     end
   end
@@ -207,6 +207,57 @@ describe Moped::Query do
       users.insert(documents)
       users.find(scope: scope).remove_all
       users.find(scope: scope).count.should eq 0
+    end
+  end
+
+  context "when connected to a replica set", replica_set: true do
+    let(:session) do
+      Moped::Session.new seeds, database: "moped_test"
+    end
+
+    before do
+      # Force connection before recording stats
+      session.command ping: 1
+    end
+
+    context "and running with eventual consistency" do
+      it "queries a secondary node" do
+        stats = Support::Stats.collect do
+          session.with(consistency: :eventual)[:users].find(scope: scope).entries
+        end
+
+        stats[:secondary].grep(Moped::Protocol::Query).count.should eq 1
+        stats[:primary].should be_empty
+      end
+
+      it "sets the slave ok flag" do
+        stats = Support::Stats.collect do
+          session.with(consistency: :eventual)[:users].find(scope: scope).one
+        end
+
+        query = stats[:secondary].grep(Moped::Protocol::Query).first
+        query.flags.should include :slave_ok
+      end
+    end
+
+    context "and running with strong consistency" do
+      it "queries the primary node" do
+        stats = Support::Stats.collect do
+          session.with(consistency: :strong)[:users].find(scope: scope).entries
+        end
+
+        stats[:primary].grep(Moped::Protocol::Query).count.should eq 1
+        stats[:secondary].should be_empty
+      end
+
+      it "does not set the slave ok flag" do
+        stats = Support::Stats.collect do
+          session.with(consistency: :strong)[:users].find(scope: scope).one
+        end
+
+        query = stats[:primary].grep(Moped::Protocol::Query).first
+        query.flags.should_not include :slave_ok
+      end
     end
   end
 end
