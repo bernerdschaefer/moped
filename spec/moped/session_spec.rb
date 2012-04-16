@@ -44,6 +44,28 @@ describe Moped::Session do
     end
   end
 
+  describe "#new" do
+    it "works" do
+      new = session.new
+
+      session.should_not equal new
+      session.replica_set.should_not equal new.replica_set
+      session.replica_set.nodes.should_not equal new.replica_set.nodes
+
+      session.replica_set.nodes.zip(new.replica_set.nodes) do |one, two|
+        p one, two
+        # one.should_not equal two
+        # one.connection.should_not equal two.connection
+      end
+
+      p session.replica_set.instance_variable_get(:@nodes).object_id
+      p new.replica_set.instance_variable_get(:@nodes).object_id
+
+      p session.replica_set.instance_variable_get(:@nodes).object_id
+      p new.replica_set.instance_variable_get(:@nodes).object_id
+    end
+  end
+
   describe "#drop" do
     it "drops the current database" do
       session.with(database: "moped_test_2") do |session|

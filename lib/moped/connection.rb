@@ -12,19 +12,6 @@ module Moped
         end
       end
 
-      def read(length)
-        result = ""
-        readpartial length, result
-
-        while (pending = length - result.bytesize) > 0
-          chunk = ""
-          readpartial pending, chunk
-          result << chunk
-        end
-
-        result
-      end
-
       def alive?
         if Kernel::select([self], nil, nil, 0)
           !eof? rescue false

@@ -1,7 +1,5 @@
 module Moped
 
-  class ConnectionError < StandardError; end
-
   class ReplicaSet
 
     # @option options :connect_timeout number of seconds to wait before aborting
@@ -137,7 +135,7 @@ module Moped
     private
 
     def initialize_copy(_)
-      @nodes.map! &:dup
+      @nodes = @nodes.map &:dup
     end
 
   end

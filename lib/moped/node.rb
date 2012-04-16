@@ -1,6 +1,4 @@
 module Moped
-  class ReplicaSetReconfigured < StandardError; end
-
   class Node
 
     attr_reader :host
@@ -129,6 +127,9 @@ module Moped
       rescue ReplicaSetReconfigured
         # Someone else wrapped this in an #ensure_primary block, so let the
         # reconfiguration exception bubble up.
+        raise
+      rescue OperationFailure
+        # Operation failures are "expected" exceptions, so bubble them up.
         raise
       rescue ConnectionError
         disconnect

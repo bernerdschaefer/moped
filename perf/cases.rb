@@ -57,9 +57,10 @@ end
 profile "Insert and find one (1000x, 2 threads)" do
   2.times.map do
     Thread.new do
+      thread_session = session.new
       1000.times do
-        session[:people].insert(name: "John")
-        session[:people].find.one
+        thread_session[:people].insert(name: "John")
+        thread_session[:people].find.one
       end
     end
   end.each &:join
@@ -68,9 +69,10 @@ end
 profile "Insert and find one (1000x, 5 threads)" do
   5.times.map do |i|
     Thread.new do
+      thread_session = session.new
       1000.times do
-        session[:people].insert(name: "John")
-        session[:people].find.one
+        thread_session[:people].insert(name: "John")
+        thread_session[:people].find.one
       end
     end
   end.each &:join
