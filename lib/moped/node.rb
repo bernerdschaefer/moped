@@ -3,7 +3,9 @@ module Moped
 
   class Node
 
-    attr_reader :host, :port, :timeout
+    attr_reader :host
+    attr_reader :port
+    attr_reader :timeout
 
     def initialize(address)
       host, port = address.split(":")
@@ -92,6 +94,12 @@ module Moped
       end
     end
 
+    attr_reader :down_at
+
+    def down?
+      @down_at
+    end
+
     # Set a flag on the node for the duration of provided block so that an
     # exception is raised if the node is no longer the primary node.
     #
@@ -101,35 +109,6 @@ module Moped
       yield
     ensure
       Threaded.end :ensure_primary
-    end
-
-    # Connect to the node.
-    #
-    # Returns nothing.
-    # Raises Moped::ConnectionError if the connection times out.
-    # Raises Moped::ConnectionError if the server is unavailable.
-    def connect
-      connection.connect host, port, timeout
-      @down_at = nil
-
-      refresh
-    rescue Timeout::Error
-      raise ConnectionError, "Timed out connection to Mongo on #{host}:#{port}"
-    rescue Errno::ECONNREFUSED
-      raise ConnectionError, "Could not connect to Mongo on #{host}:#{port}"
-    end
-
-    attr_reader :down_at
-
-    # Mark the node as down.
-    #
-    # Returns nothing.
-    def down!
-      @down_at = Time.now
-    end
-
-    def down?
-      @down_at
     end
 
     # Yields the block if a connection can be established, retrying when a
@@ -202,6 +181,29 @@ module Moped
 
     def connected?
       connection.connected?
+    end
+
+    # Mark the node as down.
+    #
+    # Returns nothing.
+    def down!
+      @down_at = Time.now
+    end
+
+    # Connect to the node.
+    #
+    # Returns nothing.
+    # Raises Moped::ConnectionError if the connection times out.
+    # Raises Moped::ConnectionError if the server is unavailable.
+    def connect
+      connection.connect host, port, timeout
+      @down_at = nil
+
+      refresh
+    rescue Timeout::Error
+      raise ConnectionError, "Timed out connection to Mongo on #{host}:#{port}"
+    rescue Errno::ECONNREFUSED
+      raise ConnectionError, "Could not connect to Mongo on #{host}:#{port}"
     end
 
     def process(operation, &callback)
