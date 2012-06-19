@@ -228,12 +228,12 @@ module Support
 
       # Checks a message to see if it's an `ismaster` query.
       def ismaster_command?(incoming_message)
-        data = StringIO.new(incoming_message)
-        data.read(20) # header and flags
-        data.gets("\x00") # collection name
-        data.read(8) # skip/limit
+        decoder = Moped::BSON::Decoder.new(incoming_message)
+        decoder.read_bytes 20 # header and flags
+        decoder.read_cstring  # collection name
+        decoder.read_bytes 8  # skip and limit
 
-        selector = Moped::BSON::Document.deserialize(data)
+        selector = Moped::BSON::Types::Document.decode(decoder)
         selector == { "ismaster" => 1 }
       end
     end

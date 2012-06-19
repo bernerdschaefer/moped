@@ -78,3 +78,24 @@ class Integer
     end
   end
 end
+
+#### FIXME #####
+
+class TrueClass
+  def __safe_options__
+    { safe: true }
+  end
+end
+
+class Object
+  def __safe_options__
+    self
+  end
+end
+
+class FalseClass
+  def __safe_options__
+    false
+  end
+end
+
