@@ -7,6 +7,9 @@ module Moped
 
   # The module for Moped's BSON implementation.
   module BSON
+
+    UTF8_ENCODING = Encoding.find('utf-8')
+
     class << self
 
       def encode(document, encoder = Encoder.new)
