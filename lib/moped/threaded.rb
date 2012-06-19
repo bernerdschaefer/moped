@@ -62,7 +62,8 @@ module Moped
     #
     # @since 1.0.0
     def stack(name)
-      Thread.current["[moped]:#{name}-stack"] ||= []
+      stack = (Thread.current[:"[moped]:thread-stacks"] ||= {})
+      stack[name] ||= []
     end
   end
 end
