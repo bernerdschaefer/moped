@@ -7,7 +7,8 @@ module Moped
         end
 
         def self.decode(decoder)
-          Time.at(decoder.read_int64 / 1000.0).utc
+          seconds, fragment = decoder.read_int64.divmod 1000
+          Time.at(seconds, fragment * 1000).utc
         end
 
         def self.type_code
