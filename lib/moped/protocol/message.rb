@@ -82,9 +82,8 @@ module Moped
           attr_accessor name
 
           class_eval <<-RUBY, __FILE__, __LINE__ + 1
-            def serialize_#{name}(buffer)
-              buffer << #{name}
-              buffer << 0
+            def serialize_#{name}(encoder)
+              encoder.write_cstring #{name}
             end
           RUBY
 
@@ -118,22 +117,22 @@ module Moped
 
           if options[:optional]
             class_eval <<-RUBY, __FILE__, __LINE__ + 1
-              def serialize_#{name}(buffer)
-                buffer << BSON::encode(#{name}) if #{name}
+              def serialize_#{name}(encoder)
+                BSON::Types::Document.encode(#{name}, encoder) if #{name}
               end
             RUBY
           elsif options[:type] == :array
             class_eval <<-RUBY, __FILE__, __LINE__ + 1
-              def serialize_#{name}(buffer)
+              def serialize_#{name}(encoder)
                 #{name}.each do |document|
-                  buffer << BSON::encode(document)
+                  BSON::Types::Document.encode(document, encoder)
                 end
               end
             RUBY
           else
             class_eval <<-RUBY, __FILE__, __LINE__ + 1
-              def serialize_#{name}(buffer)
-                buffer << BSON::encode(#{name})
+              def serialize_#{name}(encoder)
+                BSON::Types::Document.encode(#{name}, encoder)
               end
             RUBY
           end
@@ -178,14 +177,12 @@ module Moped
               flags
             end
 
-            def serialize_#{name}(buffer)
-              buffer << [#{name}_as_int].pack('l<')
+            def serialize_#{name}(encoder)
+              encoder.write_int32 #{name}_as_int
             end
 
-            def deserialize_#{name}(buffer)
-              bits, = buffer.read(4).unpack('l<')
-
-              self.#{name} = bits
+            def deserialize_#{name}(decoder)
+              self.#{name} = decoder.read_int32
             end
           RUBY
 
@@ -208,12 +205,12 @@ module Moped
               @#{name} ||= 0
             end
 
-            def serialize_#{name}(buffer)
-              buffer << [#{name}].pack('l<')
+            def serialize_#{name}(encoder)
+              encoder.write_int32 #{name}
             end
 
-            def deserialize_#{name}(buffer)
-              self.#{name}, = buffer.read(4).unpack('l<')
+            def deserialize_#{name}(decoder)
+              self.#{name} = decoder.read_int32
             end
           RUBY
 
@@ -244,11 +241,13 @@ module Moped
                 @#{name} ||= []
               end
 
-              def serialize_#{name}(buffer)
-                buffer << #{name}.pack('q*<')
+              def serialize_#{name}(encoder)
+                #{name}.each do |int|
+                  encoder.write_int64 int
+                end
               end
 
-              def deserialize_#{name}(buffer)
+              def deserialize_#{name}(decoder)
                 raise NotImplementedError
               end
             RUBY
@@ -258,12 +257,12 @@ module Moped
                 @#{name} ||= 0
               end
 
-              def serialize_#{name}(buffer)
-                buffer << [#{name}].pack('q<')
+              def serialize_#{name}(encoder)
+                encoder.write_int64 #{name}
               end
 
-              def deserialize_#{name}(buffer)
-                self.#{name}, = buffer.read(8).unpack('q<')
+              def deserialize_#{name}(decoder)
+                self.#{name} = decoder.read_int64
               end
             RUBY
           end
@@ -283,26 +282,23 @@ module Moped
 
       end
 
-      # Serializes the message and all of its fields to a new buffer or to the
-      # provided buffer.
-      #
-      # @param [String] buffer a buffer to serialize to
-      # @return [String] the result of serliazing this message
-      def serialize(buffer = "")
-        buffer.tap do
-          start = buffer.length
+      def encode(encoder)
+        encoder.begin_message
 
-          self.class.fields.each do |field|
-            __send__ :"serialize_#{field}", buffer
-          end
-
-          self.length = buffer.length - start
-
-          buffer[start, 4] = serialize_length("")
+        (self.class.fields - [:length]).each do |field|
+          __send__ "serialize_#{field}", encoder
         end
+
+        encoder.end_message
       end
 
-      alias to_s serialize
+      def serialize
+        encoder = BSON::Encoder.new
+
+        encode(encoder)
+
+        encoder.flush
+      end
 
       # @return [String] the nicely formatted version of the message
       def inspect

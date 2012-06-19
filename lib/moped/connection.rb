@@ -132,12 +132,14 @@ module Moped
     #
     # @since 1.0.0
     def write(operations)
-      buf = ""
+      encoder = BSON::Encoder.new
+
       operations.each do |operation|
         operation.request_id = (@request_id += 1)
-        operation.serialize(buf)
+        operation.encode encoder
       end
-      @sock.write(buf)
+
+      @sock.write encoder.flush
     end
 
     # This is a wrapper around a tcp socket.
