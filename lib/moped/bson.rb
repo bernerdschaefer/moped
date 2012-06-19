@@ -10,6 +10,10 @@ module Moped
 
     UTF8_ENCODING = Encoding.find('utf-8')
 
+    BYTE_PACK = 'a*'.freeze
+    CHAR_PACK = 'C'.freeze
+    NULL_PACK = 'x'.freeze
+
     class << self
 
       def encode(document, encoder = Encoder.new)

@@ -5,6 +5,8 @@ module Moped
         MIN = -2**63
         MAX =  2**63 - 1
 
+        PACK = 'q<'.freeze
+
         def self.encode(int, encoder)
           encoder.write_int64 int
         end

@@ -10,25 +10,19 @@ module Moped
       end
 
       def read_int32
-        read(4).unpack('l<')[0]
+        read(4).unpack(Types::Int32::PACK)[0]
       end
 
       def read_int64
-        read(8).unpack('q<')[0]
+        read(8).unpack(Types::Int64::PACK)[0]
       end
 
       def read_double
-        read(8).unpack('E')[0]
+        read(8).unpack(Types::Double::PACK)[0]
       end
 
       alias read_bytes read
       alias read_byte getbyte
-
-      private
-
-      def utf8_decode(value)
-        value.force_encoding('utf-8')
-      end
     end
   end
 end

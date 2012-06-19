@@ -80,33 +80,33 @@ module Moped
         assert int >= Types::Int32::MIN || int <= Types::Int32::MAX,
           "Expected 32-bit integer to be within INT32_MIN..INT32_MAX"
 
-        write int, 'l<', 4
+        write int, Types::Int32::PACK, 4
       end
 
       def write_int64(int)
         assert int >= Types::Int64::MIN || int <= Types::Int64::MAX,
           "Expected 64-bit integer to be within INT64_MIN..INT64_MAX"
 
-        write int, 'q<', 8
+        write int, Types::Int64::PACK, 8
       end
 
       def write_double(double)
         assert double >= Types::Double::MIN || double <= Types::Double::MAX,
           "Expected double to be within DOUBLE_MIN..DOUBLE_MAX"
 
-        write double, 'E', 8
+        write double, Types::Double::PACK, 8
       end
 
       def write_bytes(bytes)
-        write bytes, 'a*', bytes.length
+        write bytes, BYTE_PACK, bytes.length
       end
 
       def write_byte(byte)
-        write byte, 'C', 1
+        write byte, CHAR_PACK, 1
       end
 
       def write_null_byte
-        write nil, 'x', 1
+        write nil, NULL_PACK, 1
       end
 
       private

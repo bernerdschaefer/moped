@@ -5,6 +5,8 @@ module Moped
         MIN = -Math::E**-37
         MAX =  Math::E**37
 
+        PACK = 'E'.freeze
+
         def self.encode(float, encoder)
           encoder.write_double float
         end

@@ -5,6 +5,8 @@ module Moped
         MIN = -2**31
         MAX =  2**31 - 1
 
+        PACK = 'l<'.freeze
+
         def self.encode(int, encoder)
           encoder.write_int32 int
         end
