@@ -2,22 +2,23 @@
 
 require "spec_helper"
 
-describe Moped::BSON::Document do
-  let(:io)  { StringIO.new(raw) }
+describe Moped::BSON do
+  let(:buffer) { raw.force_encoding('binary') }
 
   shared_examples_for "a serializable bson document" do
     it "deserializes the document" do
-      Moped::BSON::Document.deserialize(io).should eq doc
+      Moped::BSON.decode(buffer).should eq doc
     end
 
     it "serializes the document" do
-      Moped::BSON::Document.serialize(doc).should eq raw.force_encoding('binary')
+      Moped::BSON.encode(doc).should eq raw.force_encoding('binary')
     end
   end
 
   it "corerces symbol keys to strings" do
-    io = Moped::BSON::Document.serialize(:hello => "world")
-    Moped::BSON::Document.deserialize(StringIO.new(io)).should eq({"hello" => "world"})
+    buffer = Moped::BSON.encode(:hello => "world")
+
+    Moped::BSON.decode(buffer).should eq({"hello" => "world"})
   end
 
   context "simple document" do
@@ -31,53 +32,53 @@ describe Moped::BSON::Document do
 
     it "handles utf-8 string values" do
       doc = { "_id" => Moped::BSON::ObjectId.new, "type" => "gültig" }
-      Moped::BSON::Document.deserialize(StringIO.new(Moped::BSON::Document.serialize(doc))).should eq doc
+      Moped::BSON.decode(Moped::BSON.encode(doc)).should eq doc
     end
 
     it "handles utf-8 regexp values" do
       doc = { "_id" => Moped::BSON::ObjectId.new, "type" => /^gültig/ }
-      Moped::BSON::Document.deserialize(StringIO.new(Moped::BSON::Document.serialize(doc))).should eq doc
+      Moped::BSON.decode(Moped::BSON.encode(doc)).should eq doc
     end
 
     it "handles utf-8 symbol values" do
       doc = { "_id" => Moped::BSON::ObjectId.new, "type" => "gültig".to_sym }
-      Moped::BSON::Document.deserialize(StringIO.new(Moped::BSON::Document.serialize(doc))).should eq doc
+      Moped::BSON.decode(Moped::BSON.encode(doc)).should eq doc
     end
 
     it "handles utf-8 string values in an array" do
       doc = { "_id" => Moped::BSON::ObjectId.new, "type" => ["gültig"] }
-      Moped::BSON::Document.deserialize(StringIO.new(Moped::BSON::Document.serialize(doc))).should eq doc
+      Moped::BSON.decode(Moped::BSON.encode(doc)).should eq doc
     end
 
     it "handles utf-8 code values" do
       doc = { "_id" => Moped::BSON::ObjectId.new, "code" => Moped::BSON::Code.new("// gültig") }
-      Moped::BSON::Document.deserialize(StringIO.new(Moped::BSON::Document.serialize(doc))).should eq doc
+      Moped::BSON.decode(Moped::BSON.encode(doc)).should eq doc
     end
 
     it "handles utf-8 code with scope values" do
       doc = { "_id" => Moped::BSON::ObjectId.new, "code" => Moped::BSON::Code.new("// gültig", {}) }
-      Moped::BSON::Document.deserialize(StringIO.new(Moped::BSON::Document.serialize(doc))).should eq doc
+      Moped::BSON.decode(Moped::BSON.encode(doc)).should eq doc
     end
 
     it "tries to encode non-utf8 data to utf-8" do
       string = "gültig"
       doc = { "type" => string.encode('iso-8859-1') }
 
-      Moped::BSON::Document.deserialize(StringIO.new(Moped::BSON::Document.serialize(doc))).should eq \
+      Moped::BSON.decode(Moped::BSON.encode(doc)).should eq \
         Hash["type" => string]
     end
 
     it "handles binary string values of utf-8 content" do
       string = "europäischen"
       doc = { "type" => string.encode('binary', 'binary') }
-      Moped::BSON::Document.deserialize(StringIO.new(Moped::BSON::Document.serialize(doc))).should eq \
+      Moped::BSON.decode(Moped::BSON.encode(doc)).should eq \
         Hash["type" => string]
     end unless RUBY_PLATFORM =~ /java/
 
     it "raises an exception for binary string values of non utf-8 content" do
       lambda do
-        Moped::BSON::Document.serialize({ "type" => 255.chr })
-      end.should raise_exception(EncodingError)
+        Moped::BSON.encode({ "type" => 255.chr })
+      end.should raise_exception(Moped::BSON::Encoder::Error)
     end unless RUBY_PLATFORM =~ /java/
   end
 
@@ -160,11 +161,10 @@ describe Moped::BSON::Document do
     end
   end
 
-  context "Undefined [deprecared]" do
-    let(:raw) { "\v\x00\x00\x00\x06null\x00\x00" }
-
-    it "is ignored in deserialization" do
-      Moped::BSON::Document.deserialize(io).should eq({})
+  context "Undefined [deprecated]" do
+    it_behaves_like "a serializable bson document" do
+      let(:raw) { "\v\x00\x00\x00\x06null\x00\x00" }
+      let(:doc) { {"null" => Moped::BSON::Types::Undefined} }
     end
   end
 
@@ -223,7 +223,7 @@ describe Moped::BSON::Document do
     pending do
       let(:raw) { ",\x00\x00\x00\x03ref\x00\"\x00\x00\x00\x02$ref\x00\x02\x00\x00\x00a\x00\a$id\x00NM\x00\xE2;9\xB6S\xF4\x00\x00\x01\x00\x00" }
       it "is ignored in deserialization" do
-        Moped::BSON::Document.deserialize(io).should eq({})
+        Moped::BSON.decode(buffer).should eq({})
       end
     end
   end
@@ -261,7 +261,7 @@ describe Moped::BSON::Document do
   context "timestamp" do
     it_behaves_like "a serializable bson document" do
       let(:raw) { "\x10\x00\x00\x00\x11n\x00d\x00\x00\x00d\x00\x00\x00\x00" }
-      let(:doc) { {"n" => Moped::BSON::Timestamp.new(100, 100)} }
+      let(:doc) { {"n" => Moped::BSON::Types::Timestamp.new("d\x00\x00\x00d\x00\x00\x00")} }
     end
   end
 
@@ -273,15 +273,15 @@ describe Moped::BSON::Document do
 
     context "when the number is too large" do
       it "raises a RangeError" do
-        lambda { Moped::BSON::Document.serialize("n" => 2**64 / 2) }.should \
-          raise_exception(RangeError)
+        lambda { Moped::BSON.encode("n" => 2**64 / 2) }.should \
+          raise_exception(TypeError)
       end
     end
 
     context "when the number is too small" do
       it "raises a RangeError" do
-        lambda { Moped::BSON::Document.serialize("n" => -2**64 / 2 - 1) }.should \
-          raise_exception(RangeError)
+        lambda { Moped::BSON.encode("n" => -2**64 / 2 - 1) }.should \
+          raise_exception(TypeError)
       end
     end
   end

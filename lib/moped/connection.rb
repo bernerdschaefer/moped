@@ -95,10 +95,11 @@ module Moped
       if reply.count == 0
         reply.documents = []
       else
-        buffer = StringIO.new(@sock.read(reply.length - 36))
+        buffer = @sock.read(reply.length - 36)
+        decoder = BSON::Decoder.new buffer
 
         reply.documents = reply.count.times.map do
-          BSON::Document.deserialize(buffer)
+          BSON::Types::Document.decode(decoder)
         end
       end
       reply

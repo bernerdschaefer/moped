@@ -7,15 +7,6 @@ module Moped
 
       include Moped::BSON::Assertions
 
-      INT32_MIN = -2**31
-      INT32_MAX =  2**31 - 1
-
-      INT64_MIN = -2**63
-      INT64_MAX =  2**63 - 1
-
-      DOUBLE_MIN = -Math::E**-37
-      DOUBLE_MAX =  Math::E**37
-
       def initialize
         @data, @pack = [], []
 
@@ -83,21 +74,21 @@ module Moped
       end
 
       def write_int32(int)
-        assert int >= INT32_MIN || int <= INT32_MAX,
+        assert int >= Types::Int32::MIN || int <= Types::Int32::MAX,
           "Expected 32-bit integer to be within INT32_MIN..INT32_MAX"
 
         write int, 'l<', 4
       end
 
       def write_int64(int)
-        assert int >= INT64_MIN || int <= INT64_MAX,
+        assert int >= Types::Int64::MIN || int <= Types::Int64::MAX,
           "Expected 64-bit integer to be within INT64_MIN..INT64_MAX"
 
         write int, 'q<', 8
       end
 
       def write_double(double)
-        assert double >= DOUBLE_MIN || double <= DOUBLE_MAX,
+        assert double >= Types::Double::MIN || double <= Types::Double::MAX,
           "Expected double to be within DOUBLE_MIN..DOUBLE_MAX"
 
         write double, 'E', 8
@@ -125,6 +116,8 @@ module Moped
       end
 
       def utf8_encode(value)
+        value = value.to_s
+
         # Optimistically attempt to encode the provided string as UTF-8.
         value.encode('utf-8')
       rescue EncodingError

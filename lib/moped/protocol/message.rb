@@ -119,21 +119,21 @@ module Moped
           if options[:optional]
             class_eval <<-RUBY, __FILE__, __LINE__ + 1
               def serialize_#{name}(buffer)
-                BSON::Document.serialize(#{name}, buffer) if #{name}
+                buffer << BSON::encode(#{name}) if #{name}
               end
             RUBY
           elsif options[:type] == :array
             class_eval <<-RUBY, __FILE__, __LINE__ + 1
               def serialize_#{name}(buffer)
                 #{name}.each do |document|
-                  BSON::Document.serialize(document, buffer)
+                  buffer << BSON::encode(document)
                 end
               end
             RUBY
           else
             class_eval <<-RUBY, __FILE__, __LINE__ + 1
               def serialize_#{name}(buffer)
-                BSON::Document.serialize(#{name}, buffer)
+                buffer << BSON::encode(#{name})
               end
             RUBY
           end

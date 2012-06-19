@@ -1,7 +1,6 @@
 require "spec_helper"
 
 describe Moped::Query do
-
   shared_examples_for "Modify" do
 
     before do
