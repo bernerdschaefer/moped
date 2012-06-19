@@ -7,18 +7,17 @@ module Moped
 
       include Moped::BSON::Assertions
 
+      attr_reader :current_scope
+
       def initialize
         @data, @pack = [], []
 
         @scope = []
       end
 
-      def current_scope
-        @scope.last
-      end
-
       def begin_document
-        @scope.push start: @data.length, length: 0
+        @current_scope = { start: @data.length, length: 0 }
+        @scope.push @current_scope
 
         write_int32 0
       end
@@ -29,6 +28,8 @@ module Moped
           "end_document called with no document begun"
 
         scope = @scope.pop
+        @current_scope = @scope.last
+
         @data[scope[:start]] = scope[:length]
 
         current_scope[:length] += scope[:length] if current_scope
@@ -41,6 +42,8 @@ module Moped
         write_null_byte
 
         scope = @scope.pop
+        @current_scope = @scope.last
+
         @data[scope[:start]] = scope[:length]
 
         current_scope[:length] += scope[:length] if current_scope
