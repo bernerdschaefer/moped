@@ -1,12 +1,3 @@
-class Fixnum
-  attr_writer :__bson_type_for_code__
-
-  def __bson_type_for_code__
-    raise "#{self} is not a known bson type code" unless @__bson_type_for_code__
-    @__bson_type_for_code__
-  end
-end
-
 class String
   def __bson_type__
     Moped::BSON::Types::String

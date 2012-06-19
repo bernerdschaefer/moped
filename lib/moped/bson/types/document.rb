@@ -22,7 +22,7 @@ module Moped
 
           while (type_code = decoder.read_byte) != 0
             key = decoder.read_cstring
-            document[key] = type_code.__bson_type_for_code__.decode(decoder)
+            document[key] = TYPE_MAP[type_code].decode(decoder)
           end
 
           document

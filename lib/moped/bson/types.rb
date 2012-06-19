@@ -19,8 +19,14 @@ require "moped/bson/types/symbol"
 require "moped/bson/types/timestamp"
 require "moped/bson/types/undefined"
 
+module Moped
+  module BSON
+    TYPE_MAP = {}
+  end
+end
+
 Moped::BSON::Types.constants.each do |name|
   type = Moped::BSON::Types.const_get(name)
 
-  type.type_code.__bson_type_for_code__ = type
+  Moped::BSON::TYPE_MAP[type.type_code] = type
 end
