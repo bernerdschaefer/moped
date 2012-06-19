@@ -14,14 +14,6 @@ module Moped
 
   # The module for Moped's BSON implementation.
   module BSON
-    EOD = NULL_BYTE = "\u0000".freeze
-
-    INT32_PACK = 'l'.freeze
-    INT64_PACK = 'q'.freeze
-    FLOAT_PACK = 'E'.freeze
-
-    START_LENGTH = [0].pack(INT32_PACK).freeze
-
     class << self
 
       # Create a new object id from the provided string.
