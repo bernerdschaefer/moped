@@ -106,7 +106,7 @@ module Moped
       end
 
       def write_null_byte
-        write nil, NULL_PACK, 1
+        write 0, CHAR_PACK, 1
       end
 
       private
@@ -114,7 +114,7 @@ module Moped
       def write(data, pack, length)
         current_scope[:length] += length if current_scope
 
-        @data << data if data
+        @data << data
         @pack << pack
       end
 
@@ -122,7 +122,7 @@ module Moped
         value = value.to_s
 
         # Optimistically attempt to encode the provided string as UTF-8.
-        value.encode('utf-8')
+        value.encode(UTF8_ENCODING)
       rescue EncodingError
         # The input string can't be automatically encoded as utf-8, but that
         # doesn't mean it's not valid utf-8 data and just mis-tagged, so we try
