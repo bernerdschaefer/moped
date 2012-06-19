@@ -18,6 +18,41 @@ module Moped
 
       def initialize
         @data, @pack = [], []
+
+        @scope = []
+      end
+
+      def current_scope
+        @scope.last
+      end
+
+      def begin_document
+        @scope.push start: @data.length, length: 0
+
+        write_int32 0
+      end
+      alias begin_message begin_document
+
+      def end_message
+        assert current_scope,
+          "end_document called with no document begun"
+
+        scope = @scope.pop
+        @data[scope[:start]] = scope[:length]
+
+        current_scope[:length] += scope[:length] if current_scope
+      end
+
+      def end_document
+        assert current_scope,
+          "end_document called with no document begun"
+
+        write_null_byte
+
+        scope = @scope.pop
+        @data[scope[:start]] = scope[:length]
+
+        current_scope[:length] += scope[:length] if current_scope
       end
 
       def flush
@@ -51,38 +86,40 @@ module Moped
         assert int >= INT32_MIN || int <= INT32_MAX,
           "Expected 32-bit integer to be within INT32_MIN..INT32_MAX"
 
-        write int, 'l<'
+        write int, 'l<', 4
       end
 
       def write_int64(int)
         assert int >= INT64_MIN || int <= INT64_MAX,
           "Expected 64-bit integer to be within INT64_MIN..INT64_MAX"
 
-        write int, 'q<'
+        write int, 'q<', 8
       end
 
       def write_double(double)
         assert double >= DOUBLE_MIN || double <= DOUBLE_MAX,
           "Expected double to be within DOUBLE_MIN..DOUBLE_MAX"
 
-        write double, 'E'
+        write double, 'E', 8
       end
 
       def write_bytes(bytes)
-        write bytes, 'a*'
+        write bytes, 'a*', bytes.length
       end
 
       def write_byte(byte)
-        write byte, 'C'
+        write byte, 'C', 1
       end
 
       def write_null_byte
-        write nil, 'x'
+        write nil, 'x', 1
       end
 
       private
 
-      def write(data, pack)
+      def write(data, pack, length)
+        current_scope[:length] += length if current_scope
+
         @data << data if data
         @pack << pack
       end
